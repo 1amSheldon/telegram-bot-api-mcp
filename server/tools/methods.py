@@ -13,18 +13,12 @@ async def resolve_method(
 
     telegram_data = ctx.lifespan_context["telegram_data"]
     name_key = name.lower().replace("_", "")
-
-    actual_name = None
-    for method_name in telegram_data.api_data.get("methods", {}).keys():
-        if method_name.lower().replace("_", "") == name_key:
-            actual_name = method_name
-            break
-
-    if not actual_name:
+    if name_key not in telegram_data["bot_api_methods"]:
         return {"error": f"Method '{name}' not found"}
 
-    method = telegram_data.api_data["methods"][actual_name]
-    return format_method(method)
+    actual_name = telegram_data["bot_api_methods"][name_key]
+    method_info = telegram_data.api_data["methods"][actual_name]
+    return format_method(method_info)
 
 
 @tool()
