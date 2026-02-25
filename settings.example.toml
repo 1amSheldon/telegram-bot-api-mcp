@@ -1,0 +1,15 @@
+[app]
+api_url = "https://raw.githubusercontent.com/PaulSonOfLars/telegram-bot-api-spec/refs/heads/main/api.min.json"
+proto = "http"
+host = "0.0.0.0"
+port = 8000
+
+[logs]
+project_name = "telegram-bot-api-mcp"
+show_datetime = true
+datetime_format = "%Y-%m-%d %H:%M:%S"
+show_debug_logs = true
+time_in_utc = false
+use_colors_in_console = true
+renderer = "console"
+allow_third_party_logs = false
