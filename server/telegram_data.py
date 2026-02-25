@@ -77,9 +77,9 @@ class TelegramData:
                     words.add(word.lower())
             
             for word in words:
-                if word not in self.search_index:
-                    self.search_index[word] = []
-                self.search_index[word].append({"type": "method", "name": method_name})
+                if word not in search_index:
+                    search_index[word] = []
+                search_index[word].append({"type": "method", "name": method_name})
         
         for type_name, type_data in self.api_data.get("types", {}).items():
             name_lower = type_name.lower()
@@ -91,8 +91,8 @@ class TelegramData:
                     words.add(word.lower())
             
             for word in words:
-                if word not in self.search_index:
-                    self.search_index[word] = []
-                self.search_index[word].append({"type": "type", "name": type_name})
+                if word not in search_index:
+                    search_index[word] = []
+                search_index[word].append({"type": "type", "name": type_name})
 
         return search_index
