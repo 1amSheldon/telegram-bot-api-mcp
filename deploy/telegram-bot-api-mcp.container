@@ -1,0 +1,18 @@
+[Unit]
+Description=Telegram Bot API MCP server container
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+ContainerName=telegram-bot-api-mcp
+Image=localhost/telegram-bot-api-mcp:latest
+PublishPort=8000:8000
+Volume=%h/telegram-bot-api-mcp/settings.toml:/app/settings.toml:Z
+Volume=%h/telegram-bot-api-mcp/data:/app/data:Z
+
+[Service]
+Restart="unless-stopped"
+RestartSec=5
+
+[Install]
+WantedBy=default.target
