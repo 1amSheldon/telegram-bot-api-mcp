@@ -1,7 +1,11 @@
+import structlog
 from fastmcp import Context
 from fastmcp.tools import tool
+from structlog.typing import FilteringBoundLogger
 
 from server.utils import format_type
+
+logger: FilteringBoundLogger = structlog.get_logger()
 
 
 @tool()
@@ -19,6 +23,7 @@ async def resolve_type(
         return {"error": f"Type '{name}' not found"}
 
     type_data = telegram_data.api_data["types"][actual_name]
+    await logger.ainfo("tool.resolve_type", kind="metrics")
     return format_type(type_data)
 
 
@@ -29,4 +34,5 @@ async def list_types(
     """List all available Telegram Bot API types."""
 
     telegram_data = ctx.lifespan_context["telegram_data"]
+    await logger.ainfo("tool.list_types", kind="metrics")
     return list(telegram_data.api_data.get("types", {}).keys())

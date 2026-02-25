@@ -1,5 +1,9 @@
+import structlog
 from fastmcp import Context
 from fastmcp.tools import tool
+from structlog.typing import FilteringBoundLogger
+
+logger: FilteringBoundLogger = structlog.get_logger()
 
 
 @tool()
@@ -9,6 +13,7 @@ async def get_version(
     """Get current Telegram Bot API version."""
 
     telegram_data = ctx.lifespan_context["telegram_data"]
+    await logger.ainfo("tool.get_version", kind="metrics")
     return telegram_data.version
 
 

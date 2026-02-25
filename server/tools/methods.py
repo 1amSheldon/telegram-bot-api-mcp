@@ -1,7 +1,11 @@
+import structlog
 from fastmcp import Context
 from fastmcp.tools import tool
+from structlog.typing import FilteringBoundLogger
 
 from server.utils import format_method
+
+logger: FilteringBoundLogger = structlog.get_logger()
 
 
 @tool()
@@ -18,6 +22,7 @@ async def resolve_method(
 
     actual_name = telegram_data["bot_api_methods"][name_key]
     method_info = telegram_data.api_data["methods"][actual_name]
+    await logger.ainfo("tool.resolve_method", kind="metrics")
     return format_method(method_info)
 
 
@@ -28,4 +33,5 @@ async def list_methods(
     """List all available Telegram Bot API methods."""
 
     telegram_data = ctx.lifespan_context["telegram_data"]
+    await logger.ainfo("tool.list_methods", kind="metrics")
     return list(telegram_data.api_data.get("methods", {}).keys())

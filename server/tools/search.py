@@ -1,5 +1,9 @@
+import structlog
 from fastmcp import Context
 from fastmcp.tools import tool
+from structlog.typing import FilteringBoundLogger
+
+logger: FilteringBoundLogger = structlog.get_logger()
 
 
 @tool()
@@ -34,4 +38,5 @@ async def find(
         if query_lower in type_name.lower() and type_name not in seen_types:
             results["types"].append(type_name)
 
+    await logger.ainfo("tool.find", kind="metrics")
     return results
