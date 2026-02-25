@@ -60,6 +60,13 @@ def get_processors(log_config: LogConfig) -> list:
         result.update(**data)
         return dumps(result, default=str)
 
+    def custom_console_serializer(logger, method_name: str, event_dict: dict) -> dict:
+        """Remove structlog internal keys from event_dict"""
+        if "_from_structlog" in event_dict:
+            event_dict.pop("_from_structlog")
+            event_dict.pop("_record")
+        return event_dict
+
     processors = list()
     if log_config.show_datetime is True:
         processors.append(
@@ -79,6 +86,7 @@ def get_processors(log_config: LogConfig) -> list:
             )
         )
     else:
+        processors.append(custom_console_serializer)
         processors.append(
             structlog.dev.ConsoleRenderer(
                 colors=log_config.use_colors_in_console,
