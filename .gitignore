@@ -3,3 +3,4 @@
 .windsurf/
 .vscode/
 /settings.toml
+*.pyc
