@@ -28,19 +28,19 @@ Copy `settings.example.toml` to `settings.toml` and configure as needed.
 ## Available Tools
 
 ### Methods Tools
-- **`resolve_method`** - Resolve a Telegram Bot API method by name and get detailed information including parameters, return types, and descriptions
-- **`list_methods`** - List all available Telegram Bot API methods
+- **`resolve_method`** - Return canonical details for a Bot API method by name (parameters, return type, and semantics)
+- **`list_methods`** - List all Bot API method names for discovery; use before `resolve_method` when the exact method is unknown
 
 ### Types Tools  
-- **`resolve_type`** - Resolve a Telegram Bot API type by name and get detailed information including fields and their types
-- **`list_types`** - List all available Telegram Bot API types
+- **`resolve_type`** - Return canonical details for a Bot API type by name (fields, field types, and constraints)
+- **`list_types`** - List all Bot API type names for discovery; use before `resolve_type` when the exact type is unknown
 
 ### Search Tools
-- **`find`** - Search for methods and types by query string with fuzzy matching
+- **`find`** - Search methods and types by natural-language query (e.g., "edit message"); then resolve returned names with `resolve_method`/`resolve_type`
 
 ### Other Tools
-- **`get_version`** - Get current Telegram Bot API version
-- **`get_changelog_link`** - Get link to the most recent changelog
+- **`get_version`** - Return the current Telegram Bot API version for version-sensitive guidance
+- **`get_changelog_link`** - Return the URL of the latest Bot API changelog for recent changes and migration context
 
 ## Usage
 

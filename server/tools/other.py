@@ -10,7 +10,10 @@ logger: FilteringBoundLogger = structlog.get_logger()
 async def get_version(
         ctx: Context,
 ) -> str:
-    """Get current Telegram Bot API version."""
+    """Return the current Telegram Bot API version.
+
+    Use this when version-specific behavior may affect implementation guidance.
+    """
 
     telegram_data = ctx.lifespan_context["telegram_data"]
     await logger.ainfo("tool.get_version", kind="metrics")
@@ -21,7 +24,10 @@ async def get_version(
 async def get_changelog_link(
         ctx: Context,
 ) -> str:
-    """Get link to the most recent changelog."""
+    """Return the URL of the latest Telegram Bot API changelog.
+
+    Use this when a user asks about recent API changes or migration context.
+    """
 
     telegram_data = ctx.lifespan_context["telegram_data"]
     return telegram_data.changelog_link

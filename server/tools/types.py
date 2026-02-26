@@ -13,7 +13,11 @@ async def resolve_type(
         name: str,
         ctx: Context,
 ) -> dict:
-    """Resolve a Telegram Bot API type by name."""
+    """Return canonical details for a Telegram Bot API type by name.
+
+    Use this to verify field names, field types, and constraints for a Bot API
+    object before generating or reviewing code.
+    """
 
     telegram_data = ctx.lifespan_context["telegram_data"]
     name_lower = name.lower()
@@ -31,7 +35,11 @@ async def resolve_type(
 async def list_types(
         ctx: Context,
 ) -> list[str]:
-    """List all available Telegram Bot API types."""
+    """List all Telegram Bot API type names.
+
+    Use this for discovery when the exact type name is unknown, then call
+    ``resolve_type`` for detailed type information.
+    """
 
     telegram_data = ctx.lifespan_context["telegram_data"]
     await logger.ainfo("tool.list_types", kind="metrics")

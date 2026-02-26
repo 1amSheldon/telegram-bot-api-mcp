@@ -13,7 +13,11 @@ async def resolve_method(
         name: str,
         ctx: Context,
 ) -> dict:
-    """Resolve a Telegram Bot API method by name."""
+    """Return canonical details for a Telegram Bot API method by name.
+
+    Use this to verify method parameters, return type, and field semantics against
+    the official Bot API spec before giving implementation advice.
+    """
 
     telegram_data = ctx.lifespan_context["telegram_data"]
     name_key = name.lower().replace("_", "")
@@ -30,7 +34,11 @@ async def resolve_method(
 async def list_methods(
         ctx: Context,
 ) -> list[str]:
-    """List all available Telegram Bot API methods."""
+    """List all Telegram Bot API method names.
+
+    Use this for discovery when the exact method is unknown, then call
+    ``resolve_method`` for full method details.
+    """
 
     telegram_data = ctx.lifespan_context["telegram_data"]
     await logger.ainfo("tool.list_methods", kind="metrics")

@@ -11,7 +11,12 @@ async def find(
         query: str,
         ctx: Context,
 ) -> dict:
-    """Search for methods and types by query string."""
+    """Search Telegram Bot API methods and types by natural-language query.
+
+    Use this as a first step when the exact API entity is unclear (for example,
+    "edit message" or "reply keyboard"), then call ``resolve_method`` or
+    ``resolve_type`` on the returned names for canonical details.
+    """
 
     telegram_data = ctx.lifespan_context["telegram_data"]
     query_lower = query.lower()
