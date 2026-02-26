@@ -1,24 +1,27 @@
-import structlog
 from fastmcp import Context
 from fastmcp.tools import tool
-from structlog.typing import FilteringBoundLogger
-
-logger: FilteringBoundLogger = structlog.get_logger()
+ 
+from server.registry import get_telegram_data
+from server.schemas import FindResult, Response
+from server.metrics import metrics
+from server.utils import build_metadata, build_response
 
 
 @tool()
+@metrics("tool.find")
 async def find(
         query: str,
         ctx: Context,
-) -> dict:
+) -> Response[FindResult]:
     """Search Telegram Bot API methods and types by natural-language query.
 
     Use this as a first step when the exact API entity is unclear (for example,
     "edit message" or "reply keyboard"), then call ``resolve_method`` or
     ``resolve_type`` on the returned names for canonical details.
+    DO NOT use for finding latest API updates or version history.
     """
 
-    telegram_data = ctx.lifespan_context["telegram_data"]
+    telegram_data = get_telegram_data(ctx)
     query_lower = query.lower()
     results = {"methods": [], "types": []}
 
@@ -43,5 +46,11 @@ async def find(
         if query_lower in type_name.lower() and type_name not in seen_types:
             results["types"].append(type_name)
 
-    await logger.ainfo("tool.find", kind="metrics")
-    return results
+    payload = FindResult(
+        methods=results["methods"],
+        types=results["types"],
+    )
+    metadata = build_metadata(
+        version=telegram_data.current_version,
+    )
+    return build_response(payload, metadata)

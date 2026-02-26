@@ -1,33 +1,46 @@
-import structlog
 from fastmcp import Context
 from fastmcp.tools import tool
-from structlog.typing import FilteringBoundLogger
-
-logger: FilteringBoundLogger = structlog.get_logger()
+ 
+from server.registry import get_telegram_data
+from server.schemas import ChangelogResult, ChangelogUpdate, Response, VersionInfo
+from server.metrics import metrics
+from server.utils import build_metadata, build_response
 
 
 @tool()
+@metrics("tool.get_version")
 async def get_version(
         ctx: Context,
-) -> str:
+) -> Response[VersionInfo]:
     """Return the current Telegram Bot API version.
 
     Use this when version-specific behavior may affect implementation guidance.
     """
 
-    telegram_data = ctx.lifespan_context["telegram_data"]
-    await logger.ainfo("tool.get_version", kind="metrics")
-    return telegram_data.version
+    telegram_data = get_telegram_data(ctx)
+    payload = VersionInfo(version=telegram_data.current_version)
+    metadata = build_metadata(
+        version=telegram_data.current_version,
+    )
+    return build_response(payload, metadata)
 
 
 @tool()
-async def get_changelog_link(
+@metrics("tool.changelog")
+async def changelog(
         ctx: Context,
-) -> str:
-    """Return the URL of the latest Telegram Bot API changelog.
+) -> Response[ChangelogResult]:
+    """Return latest Telegram Bot API changelog updates from startup cache.
 
-    Use this when a user asks about recent API changes or migration context.
+    Use this when a user asks about recent API changes. Returns the latest
+    parsed release entries with plain-text bullet points.
     """
 
-    telegram_data = ctx.lifespan_context["telegram_data"]
-    return telegram_data.changelog_link
+    telegram_data = get_telegram_data(ctx)
+    payload = ChangelogResult(
+        updates=[ChangelogUpdate(**entry) for entry in telegram_data.recent_changelog]
+    )
+    metadata = build_metadata(
+        version=telegram_data.current_version,
+    )
+    return build_response(payload, metadata)

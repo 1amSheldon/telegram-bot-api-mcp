@@ -1,46 +1,55 @@
-import structlog
 from fastmcp import Context
 from fastmcp.tools import tool
-from structlog.typing import FilteringBoundLogger
 
-from server.utils import format_type
-
-logger: FilteringBoundLogger = structlog.get_logger()
+from server.errors import TypeNotFoundError
+from server.registry import get_telegram_data
+from server.schemas import Response, TypeDetail, TypeList
+from server.metrics import metrics
+from server.utils import build_metadata, build_response, format_type
 
 
 @tool()
+@metrics("tool.resolve_type")
 async def resolve_type(
         name: str,
         ctx: Context,
-) -> dict:
+) -> Response[TypeDetail]:
     """Return canonical details for a Telegram Bot API type by name.
 
     Use this to verify field names, field types, and constraints for a Bot API
     object before generating or reviewing code.
     """
 
-    telegram_data = ctx.lifespan_context["telegram_data"]
-    name_lower = name.lower()
-    actual_name = telegram_data.bot_api_types.get(name_lower)
+    telegram_data = get_telegram_data(ctx)
+    actual_name = telegram_data.resolve_type_name(name)
 
     if not actual_name:
-        return {"error": f"Type '{name}' not found"}
+        raise TypeNotFoundError(name)
 
     type_data = telegram_data.api_data["types"][actual_name]
-    await logger.ainfo("tool.resolve_type", kind="metrics")
-    return format_type(type_data)
+    detail = format_type(type_data)
+    metadata = build_metadata(
+        version=telegram_data.current_version,
+        documentation_url=type_data.get("href"),
+    )
+    return build_response(detail, metadata)
 
 
 @tool()
+@metrics("tool.list_types")
 async def list_types(
         ctx: Context,
-) -> list[str]:
+) -> Response[TypeList]:
     """List all Telegram Bot API type names.
 
     Use this for discovery when the exact type name is unknown, then call
     ``resolve_type`` for detailed type information.
     """
 
-    telegram_data = ctx.lifespan_context["telegram_data"]
-    await logger.ainfo("tool.list_types", kind="metrics")
-    return list(telegram_data.api_data.get("types", {}).keys())
+    telegram_data = get_telegram_data(ctx)
+    items = list(telegram_data.api_data.get("types", {}).keys())
+    payload = TypeList(items=items, total=len(items))
+    metadata = build_metadata(
+        version=telegram_data.current_version,
+    )
+    return build_response(payload, metadata)

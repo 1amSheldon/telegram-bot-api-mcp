@@ -1,4 +1,6 @@
 import json
+import re
+from html import unescape
 from pathlib import Path
 from typing import Any
 
@@ -8,6 +10,9 @@ from structlog.typing import FilteringBoundLogger
 
 logger: FilteringBoundLogger = structlog.get_logger()
 
+CHANGELOG_PAGE_URL = "https://core.telegram.org/bots/api-changelog"
+MAX_RECENT_CHANGELOG_UPDATES = 3
+
 class TelegramData:
     def __init__(
             self,
@@ -15,12 +20,38 @@ class TelegramData:
     ):
         self.api_url = api_url
         self.api_data: dict[str, Any] = {}
-        self.bot_api_methods: dict[str, str] = {}
-        self.bot_api_types: dict[str, str] = {}
+        self.normalized_method_names: dict[str, str] = {}
+        self.normalized_type_names: dict[str, str] = {}
+        self.method_search_text: dict[str, str] = {}
         self.search_index: dict[str, list[dict[str, str]]] = {}
         self.fallback_path = Path(__file__).resolve().parent.parent.joinpath("data", "botapi.json")
-        self.version = ""
-        self.changelog_link = ""
+        self.current_version = ""
+        self.recent_changelog: list[dict[str, Any]] = []
+
+    @staticmethod
+    def normalize_name(name: str) -> str:
+        return name.lower().replace("_", "")
+
+    def resolve_method_name(self, name: str) -> str | None:
+        return self.normalized_method_names.get(self.normalize_name(name))
+
+    def resolve_type_name(self, name: str) -> str | None:
+        return self.normalized_type_names.get(self.normalize_name(name))
+
+    def list_method_names(self, filter_keyword: str | None = None) -> list[str]:
+        methods = list(self.api_data.get("methods", {}).keys())
+        if not filter_keyword:
+            return methods
+
+        keyword = filter_keyword.lower().strip()
+        if not keyword:
+            return methods
+
+        return [
+            name
+            for name in methods
+            if keyword in self.method_search_text.get(name, "")
+        ]
     
     async def load_api_data(self) -> None:
         try:
@@ -51,21 +82,86 @@ class TelegramData:
             
             await logger.ainfo("Successfully loaded fallback API data")
         
-        self.bot_api_methods = {
-            name.lower(): name for name in self.api_data.get("methods", {}).keys()
+        self.normalized_method_names = {
+            self.normalize_name(name): name
+            for name in self.api_data.get("methods", {}).keys()
         }
-        self.bot_api_types = {
-            name.lower(): name for name in self.api_data.get("types", {}).keys()
+        self.normalized_type_names = {
+            self.normalize_name(name): name
+            for name in self.api_data.get("types", {}).keys()
         }
-        self.search_index = self.build_search_index()
+        self.method_search_text = {
+            method_name: " ".join(
+                [method_name.lower()] + method_data.get("description", [])
+            ).lower()
+            for method_name, method_data in self.api_data.get("methods", {}).items()
+        }
+        self.search_index = self.__build_search_index()
 
         version_text = f"{self.api_data['version']} ({self.api_data['release_date']})"
-        self.version = version_text
+        self.current_version = version_text
 
-        self.changelog_link = self.api_data["changelog"]
+        await self.__load_recent_changelog()
+
+    async def __load_recent_changelog(self) -> None:
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(CHANGELOG_PAGE_URL)
+                response.raise_for_status()
+                self.recent_changelog = self.__parse_recent_changelog(response.text)
+        except Exception as ex:
+            await logger.aexception(
+                f"Failed to fetch/parse changelog page: {ex.__class__.__name__}: {ex}"
+            )
+            self.recent_changelog = []
+
+    @staticmethod
+    def __plain_text(value: str) -> str:
+        without_tags = re.sub(r"<[^>]+>", "", value)
+        return " ".join(unescape(without_tags).split())
+
+    def __parse_recent_changelog(self, html: str) -> list[dict[str, Any]]:
+        updates: list[dict[str, Any]] = []
+        release_pattern = re.compile(
+            r"<h4[^>]*>.*?</a>(?P<date>[^<]+)</h4>(?P<body>.*?)(?=<h4[^>]*>|\Z)",
+            re.IGNORECASE | re.DOTALL,
+        )
+
+        for match in release_pattern.finditer(html):
+            date = self.__plain_text(match.group("date"))
+            body = match.group("body")
+
+            version_match = re.search(
+                r"<p>\s*<strong>\s*(Bot API\s+[^<]+?)\s*</strong>\s*</p>",
+                body,
+                re.IGNORECASE | re.DOTALL,
+            )
+            if not version_match:
+                continue
+
+            version = self.__plain_text(version_match.group(1))
+            changes = [
+                self.__plain_text(item)
+                for item in re.findall(r"<li>(.*?)</li>", body, re.IGNORECASE | re.DOTALL)
+            ]
+
+            if not changes:
+                continue
+
+            updates.append(
+                {
+                    "date": date,
+                    "version": version,
+                    "changes": changes,
+                }
+            )
+            if len(updates) >= MAX_RECENT_CHANGELOG_UPDATES:
+                break
+
+        return updates
     
-    def build_search_index(self) -> dict[str, list[dict[str, str]]]:
-        search_index = {}
+    def __build_search_index(self) -> dict[str, list[dict[str, str]]]:
+        search_index = dict()
         
         for method_name, method_data in self.api_data.get("methods", {}).items():
             name_lower = method_name.lower()

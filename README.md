@@ -40,7 +40,7 @@ Copy `settings.example.toml` to `settings.toml` and configure as needed.
 
 ### Other Tools
 - **`get_version`** - Return the current Telegram Bot API version for version-sensitive guidance
-- **`get_changelog_link`** - Return the URL of the latest Bot API changelog for recent changes and migration context
+- **`changelog`** - Return latest cached changelog updates (date, version, plain-text changes)
 
 ## Usage
 

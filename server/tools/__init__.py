@@ -8,5 +8,5 @@ def get_tools() -> list:
         types.list_types,
         search.find,
         other.get_version,
-        other.get_changelog_link,
+        other.changelog,
     ]
