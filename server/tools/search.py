@@ -21,7 +21,7 @@ async def find(
     DO NOT use for finding latest API updates or version history.
     """
 
-    telegram_data = get_telegram_data(ctx)
+    telegram_data = await get_telegram_data(ctx)
     query_lower = query.lower()
     results = {"methods": [], "types": []}
 

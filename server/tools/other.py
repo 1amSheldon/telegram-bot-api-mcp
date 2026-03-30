@@ -17,7 +17,7 @@ async def get_version(
     Use this when version-specific behavior may affect implementation guidance.
     """
 
-    telegram_data = get_telegram_data(ctx)
+    telegram_data = await get_telegram_data(ctx)
     payload = VersionInfo(version=telegram_data.current_version)
     metadata = build_metadata(
         version=telegram_data.current_version,
@@ -36,7 +36,7 @@ async def changelog(
     parsed release entries with plain-text bullet points.
     """
 
-    telegram_data = get_telegram_data(ctx)
+    telegram_data = await get_telegram_data(ctx)
     payload = ChangelogResult(
         updates=[ChangelogUpdate(**entry) for entry in telegram_data.recent_changelog]
     )

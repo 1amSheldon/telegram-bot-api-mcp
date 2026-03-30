@@ -26,7 +26,7 @@ async def resolve_method(
     If lookup fails, try ``list_methods`` with ``filter`` to discover a close match.
     """
 
-    telegram_data = get_telegram_data(ctx)
+    telegram_data = await get_telegram_data(ctx)
     actual_name = telegram_data.resolve_method_name(name)
     if not actual_name:
         available = list(telegram_data.api_data.get("methods", {}).keys())
@@ -66,7 +66,7 @@ async def list_methods(
     if offset < 0:
         raise ValueError("Parameter 'offset' must be >= 0")
 
-    telegram_data = get_telegram_data(ctx)
+    telegram_data = await get_telegram_data(ctx)
     methods = telegram_data.list_method_names(filter)
     total = len(methods)
     items = methods[offset: offset + limit]

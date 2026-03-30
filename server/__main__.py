@@ -16,6 +16,7 @@ async def lifespan(server):
     settings = Settings()
     telegram_data = TelegramData(
         api_url=settings.app.api_url,
+        refresh_ttl_seconds=settings.app.refresh_ttl_seconds,
     )
     await telegram_data.load_api_data()
     try:
@@ -34,6 +35,10 @@ def main():
     )
     for tool in get_tools():
         mcp.add_tool(tool)
+    if settings.app.proto == "stdio":
+        mcp.run(transport="stdio")
+        return
+
     mcp.run(
         transport="http",
         host=settings.app.host,

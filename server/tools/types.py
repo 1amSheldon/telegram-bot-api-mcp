@@ -20,7 +20,7 @@ async def resolve_type(
     object before generating or reviewing code.
     """
 
-    telegram_data = get_telegram_data(ctx)
+    telegram_data = await get_telegram_data(ctx)
     actual_name = telegram_data.resolve_type_name(name)
 
     if not actual_name:
@@ -46,7 +46,7 @@ async def list_types(
     ``resolve_type`` for detailed type information.
     """
 
-    telegram_data = get_telegram_data(ctx)
+    telegram_data = await get_telegram_data(ctx)
     items = list(telegram_data.api_data.get("types", {}).keys())
     payload = TypeList(items=items, total=len(items))
     metadata = build_metadata(

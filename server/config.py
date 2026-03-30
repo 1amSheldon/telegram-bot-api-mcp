@@ -1,7 +1,7 @@
 import tomllib
+from typing import Any, Tuple, Type, Literal
 from enum import StrEnum
 from pathlib import Path
-from typing import Any, Tuple, Type, Literal
 
 from pydantic import BaseModel
 from pydantic_settings import (
@@ -32,6 +32,7 @@ class AppConfig(BaseModel):
     proto: Literal["http", "stdio"]
     host: str = "0.0.0.0"
     port: int = 8000
+    refresh_ttl_seconds: int = 900
 
 
 class TomlConfigSettingsSource(PydanticBaseSettingsSource):

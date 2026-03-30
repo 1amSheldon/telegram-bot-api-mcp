@@ -25,6 +25,12 @@ uv sync
 
 Copy `settings.example.toml` to `settings.toml` and configure as needed.
 
+Notes:
+
+- `proto = "stdio"` is the right mode for local MCP clients such as Codex, Cursor, or Claude Desktop integrations.
+- `proto = "http"` is still available if you want to run the server as a standalone HTTP MCP endpoint.
+- `refresh_ttl_seconds` controls how often the server re-fetches the Telegram Bot API spec and changelog after startup. The default is `900` seconds.
+
 ## Available Tools
 
 ### Methods Tools
@@ -50,7 +56,9 @@ Start the MCP server:
 python -m server
 ```
 
-The server will load the latest Telegram Bot API documentation and provide tools for accessing methods, types, and searching through the API reference.
+The server loads Telegram Bot API data from the `telegram-bot-api-spec` main branch on startup and falls back to the bundled local snapshot if the remote source is unavailable.
+
+With `refresh_ttl_seconds` configured, the server also refreshes the cached API data lazily during tool usage, so long-running MCP sessions do not stay pinned to an old Bot API snapshot forever.
 
 ## Development
 

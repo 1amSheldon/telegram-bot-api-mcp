@@ -1,5 +1,7 @@
 import json
 import re
+import time
+from asyncio import Lock
 from html import unescape
 from pathlib import Path
 from typing import Any
@@ -17,8 +19,10 @@ class TelegramData:
     def __init__(
             self,
             api_url: str | None = None,
+            refresh_ttl_seconds: int = 900,
     ):
         self.api_url = api_url
+        self.refresh_ttl_seconds = max(refresh_ttl_seconds, 0)
         self.api_data: dict[str, Any] = {}
         self.normalized_method_names: dict[str, str] = {}
         self.normalized_type_names: dict[str, str] = {}
@@ -27,6 +31,8 @@ class TelegramData:
         self.fallback_path = Path(__file__).resolve().parent.parent.joinpath("data", "botapi.json")
         self.current_version = ""
         self.recent_changelog: list[dict[str, Any]] = []
+        self._loaded_monotonic: float = 0.0
+        self._refresh_lock = Lock()
 
     @staticmethod
     def normalize_name(name: str) -> str:
@@ -100,8 +106,32 @@ class TelegramData:
 
         version_text = f"{self.api_data['version']} ({self.api_data['release_date']})"
         self.current_version = version_text
+        self._loaded_monotonic = time.monotonic()
 
         await self.__load_recent_changelog()
+
+    async def ensure_fresh(self) -> None:
+        if not self.api_data:
+            await self.load_api_data()
+            return
+
+        if self.refresh_ttl_seconds <= 0:
+            return
+
+        now = time.monotonic()
+        if now - self._loaded_monotonic < self.refresh_ttl_seconds:
+            return
+
+        async with self._refresh_lock:
+            now = time.monotonic()
+            if self.api_data and now - self._loaded_monotonic < self.refresh_ttl_seconds:
+                return
+
+            await logger.ainfo(
+                "Refreshing Telegram Bot API data because refresh TTL expired",
+                refresh_ttl_seconds=self.refresh_ttl_seconds,
+            )
+            await self.load_api_data()
 
     async def __load_recent_changelog(self) -> None:
         try:
