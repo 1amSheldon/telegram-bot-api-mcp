@@ -20,9 +20,11 @@ class TelegramData:
             self,
             api_url: str | None = None,
             refresh_ttl_seconds: int = 900,
+            log_enabled: bool = True,
     ):
         self.api_url = api_url
         self.refresh_ttl_seconds = max(refresh_ttl_seconds, 0)
+        self.log_enabled = log_enabled
         self.api_data: dict[str, Any] = {}
         self.normalized_method_names: dict[str, str] = {}
         self.normalized_type_names: dict[str, str] = {}
@@ -33,6 +35,14 @@ class TelegramData:
         self.recent_changelog: list[dict[str, Any]] = []
         self._loaded_monotonic: float = 0.0
         self._refresh_lock = Lock()
+
+    async def _log_info(self, message: str, **kwargs: Any) -> None:
+        if self.log_enabled:
+            await logger.ainfo(message, **kwargs)
+
+    async def _log_exception(self, message: str, **kwargs: Any) -> None:
+        if self.log_enabled:
+            await logger.aexception(message, **kwargs)
 
     @staticmethod
     def normalize_name(name: str) -> str:
@@ -64,13 +74,13 @@ class TelegramData:
             if not self.api_url:
                 raise ValueError("API URL is not specified")
 
-            await logger.ainfo(f"Fetching API data from {self.api_url}")
+            await self._log_info(f"Fetching API data from {self.api_url}")
             async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.get(self.api_url)
                 
                 if response.status_code == 200:
                     self.api_data = response.json()
-                    await logger.ainfo("Successfully fetched API data from remote source")
+                    await self._log_info("Successfully fetched API data from remote source")
                 else:
                     raise httpx.HTTPStatusError(
                         f"HTTP {response.status_code}",
@@ -78,15 +88,15 @@ class TelegramData:
                         response=response,
                     )
         except Exception as ex:
-            await logger.aexception(
+            await self._log_exception(
                 f"Failed to fetch remote API data: {ex.__class__.__name__}: {ex}"
             )
-            await logger.ainfo(f"Loading fallback API data from {self.fallback_path}")
+            await self._log_info(f"Loading fallback API data from {self.fallback_path}")
             
             with open(self.fallback_path, "rt", encoding="utf-8") as file:
                 self.api_data = json.load(file)
             
-            await logger.ainfo("Successfully loaded fallback API data")
+            await self._log_info("Successfully loaded fallback API data")
         
         self.normalized_method_names = {
             self.normalize_name(name): name
@@ -127,7 +137,7 @@ class TelegramData:
             if self.api_data and now - self._loaded_monotonic < self.refresh_ttl_seconds:
                 return
 
-            await logger.ainfo(
+            await self._log_info(
                 "Refreshing Telegram Bot API data because refresh TTL expired",
                 refresh_ttl_seconds=self.refresh_ttl_seconds,
             )
@@ -140,7 +150,7 @@ class TelegramData:
                 response.raise_for_status()
                 self.recent_changelog = self.__parse_recent_changelog(response.text)
         except Exception as ex:
-            await logger.aexception(
+            await self._log_exception(
                 f"Failed to fetch/parse changelog page: {ex.__class__.__name__}: {ex}"
             )
             self.recent_changelog = []

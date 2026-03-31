@@ -48,6 +48,24 @@ Notes:
 - **`get_version`** - Return the current Telegram Bot API version for version-sensitive guidance
 - **`changelog`** - Return latest cached changelog updates (date, version, plain-text changes)
 
+## Available Resources
+
+Static resources:
+- `telegram-bot-api://index`
+- `telegram-bot-api://version`
+- `telegram-bot-api://changelog`
+- `telegram-bot-api://methods`
+- `telegram-bot-api://types`
+
+Resource templates:
+- `telegram-bot-api://method/{name}`
+- `telegram-bot-api://type/{name}`
+- `telegram-bot-api://search/{query}`
+
+These resources mirror the same Telegram Bot API data exposed by the tools, but make the
+server usable in MCP runtimes that only support `list_resources`, `list_resource_templates`,
+and `read_resource`.
+
 ## Usage
 
 Start the MCP server:
@@ -56,9 +74,19 @@ Start the MCP server:
 python -m server
 ```
 
+If your MCP client does not reliably honor the configured working directory, use the
+absolute runner entrypoint instead:
+
+```bash
+python run_stdio.py
+```
+
 The server loads Telegram Bot API data from the `telegram-bot-api-spec` main branch on startup and falls back to the bundled local snapshot if the remote source is unavailable.
 
-With `refresh_ttl_seconds` configured, the server also refreshes the cached API data lazily during tool usage, so long-running MCP sessions do not stay pinned to an old Bot API snapshot forever.
+For stdio mode, the server initializes first and then loads Telegram Bot API data lazily on the
+first tool or resource read. With `refresh_ttl_seconds` configured, it refreshes the cached API
+data during later usage, so long-running MCP sessions do not stay pinned to an old Bot API
+snapshot forever.
 
 ## Development
 

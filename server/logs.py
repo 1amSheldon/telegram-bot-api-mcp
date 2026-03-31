@@ -1,6 +1,6 @@
 import logging
 from json import dumps
-from sys import stdout
+from sys import stderr
 
 import structlog
 from structlog import WriteLoggerFactory
@@ -28,7 +28,7 @@ def get_structlog_config(log_config: LogConfig) -> dict:
 
     if log_config.allow_third_party_logs:
         # Create handler for stdlib logging
-        standard_handler = logging.StreamHandler(stream=stdout)
+        standard_handler = logging.StreamHandler(stream=stderr)
         standard_handler.setFormatter(
             structlog.stdlib.ProcessorFormatter(
                 processors=get_processors(log_config)
@@ -44,7 +44,7 @@ def get_structlog_config(log_config: LogConfig) -> dict:
         "processors": get_processors(log_config),
         "cache_logger_on_first_use": True,
         "wrapper_class": structlog.make_filtering_bound_logger(min_level),
-        "logger_factory": WriteLoggerFactory(),
+        "logger_factory": WriteLoggerFactory(file=stderr),
     }
 
 
